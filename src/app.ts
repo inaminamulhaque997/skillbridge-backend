@@ -18,7 +18,11 @@ dotenv.config();
 const app: Express = express();
 
 // Middleware
-const allowedOrigins = ['http://localhost:3000', 'http://localhost:3001'];
+const allowedOrigins = [
+  'http://localhost:3000', 
+  'http://localhost:3001',
+  'https://skillbridge-frontend-mocha.vercel.app'
+];
 if (process.env.FRONTEND_URL) {
   allowedOrigins.push(process.env.FRONTEND_URL);
 }
