@@ -21,16 +21,47 @@ const app: Express = express();
 const allowedOrigins = [
   'http://localhost:3000', 
   'http://localhost:3001',
-  'https://skillbridge-frontend-mocha.vercel.app'
+  'https://skillbridge-frontend-mocha.vercel.app',
+  'https://skillbridge-frontend-git-main-inam-s-projects.vercel.app'
 ];
 if (process.env.FRONTEND_URL) {
   allowedOrigins.push(process.env.FRONTEND_URL);
 }
 
-app.use(cors({
-  origin: allowedOrigins,
+// CORS configuration that allows all Vercel preview deployments
+const corsOptions = {
+  origin: (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) => {
+    // Allow requests with no origin (like mobile apps or curl)
+    if (!origin) {
+      callback(null, true);
+      return;
+    }
+    
+    // Allow localhost
+    if (origin.startsWith('http://localhost:') || origin.startsWith('http://127.0.0.1:')) {
+      callback(null, true);
+      return;
+    }
+    
+    // Allow all Vercel preview deployments
+    if (origin.endsWith('.vercel.app')) {
+      callback(null, true);
+      return;
+    }
+    
+    // Allow explicitly listed origins
+    if (allowedOrigins.includes(origin)) {
+      callback(null, true);
+      return;
+    }
+    
+    // Reject others
+    callback(new Error('Not allowed by CORS'));
+  },
   credentials: true,
-}));
+};
+
+app.use(cors(corsOptions));
 app.use(cookieParser());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
