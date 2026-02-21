@@ -1,0 +1,123 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ==================== ENUMS ====================
+
+enum Role {
+  STUDENT
+  TUTOR
+  ADMIN
+}
+
+enum BookingStatus {
+  PENDING
+  CONFIRMED
+  COMPLETED
+  CANCELLED
+}
+
+// ==================== CORE TABLES ====================
+
+model User {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  password  String
+  name      String
+  role      Role     @default(STUDENT)
+  avatar    String?
+  phone     String?
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  studentBookings Booking[]       @relation("StudentBookings")
+  tutorBookings   Booking[]       @relation("TutorBookings")
+  tutorProfile    TutorProfile?
+  reviewsWritten  Review[]        @relation("ReviewAuthor")
+  availability    Availability[]
+
+  @@map("users")
+}
+
+model TutorProfile {
+  id          String   @id @default(uuid())
+  userId      String   @unique
+  bio         String   @db.Text
+  hourlyRate  Decimal  @db.Decimal(10, 2)
+  education   String?
+  experience  String?
+  subjects    String[]
+  languages   String[] @default(["English"])
+
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("tutor_profiles")
+}
+
+model Category {
+  id          String   @id @default(uuid())
+  name        String   @unique
+  description String?
+  icon        String?
+  createdAt   DateTime @default(now())
+
+  @@map("categories")
+}
+
+// ==================== BOOKING SYSTEM ====================
+
+model Booking {
+  id          String        @id @default(uuid())
+  studentId   String
+  tutorId     String
+  date        DateTime      @db.Date
+  startTime   String
+  endTime     String
+  status      BookingStatus @default(PENDING)
+  price       Decimal       @db.Decimal(10, 2)
+  notes       String?
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  student     User          @relation("StudentBookings", fields: [studentId], references: [id])
+  tutor       User          @relation("TutorBookings", fields: [tutorId], references: [id])
+  review      Review?
+
+  @@map("bookings")
+}
+
+model Availability {
+  id        String  @id @default(uuid())
+  tutorId   String
+  dayOfWeek Int
+  startTime String
+  endTime   String
+  isActive  Boolean @default(true)
+
+  tutor     User    @relation(fields: [tutorId], references: [id], onDelete: Cascade)
+
+  @@unique([tutorId, dayOfWeek, startTime])
+  @@map("availability")
+}
+
+model Review {
+  id        String   @id @default(uuid())
+  bookingId String   @unique
+  studentId String
+  tutorId   String
+  rating    Int
+  comment   String?  @db.Text
+  createdAt DateTime @default(now())
+
+  booking   Booking  @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  author    User     @relation("ReviewAuthor", fields: [studentId], references: [id])
+
+  @@map("reviews")
+}
